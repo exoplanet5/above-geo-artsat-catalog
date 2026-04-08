@@ -1,0 +1,14 @@
+# Build output (assembled by `make dist` and by CI; do not commit)
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,77 @@
+name: Sync to Hugging Face Space
+
+# Default deployment path: any push to `main` that touches the catalog
+# rebuilds the static bundle and uploads it to the linked HF Space.
+#
+# Required repo configuration (Settings -> Secrets and variables -> Actions):
+#   secrets.HF_TOKEN     - HF access token with `write` scope
+#                          (https://huggingface.co/settings/tokens)
+#   vars.HF_REPO_ID      - target Space repo, e.g. "yourname/above-geo-artsat-catalog"
+#
+# If `catalog/` lives inside a parent monorepo (not the GitHub repo root),
+# adjust `working-directory` and the `paths:` filters accordingly.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'data/orbits.json'
+      - 'deploy/**'
+      - 'build.py'
+      - 'Makefile'
+      - '.github/workflows/sync-hf.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: hf-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install huggingface_hub
+        run: pip install --quiet "huggingface_hub>=0.23"
+
+      - name: Build dist bundle
+        # `make dist` reuses the data/orbits.json that was committed from
+        # a local `make build`. CI does not parse TLE files itself.
+        run: make dist
+
+      - name: Upload dist/ to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO_ID: ${{ vars.HF_REPO_ID }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "ERROR: secret HF_TOKEN is not set"; exit 1
+          fi
+          if [ -z "$HF_REPO_ID" ]; then
+            echo "ERROR: variable HF_REPO_ID is not set"; exit 1
+          fi
+          python <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          repo_id = os.environ["HF_REPO_ID"]
+          short_sha = os.environ.get("GITHUB_SHA", "manual")[:7]
+
+          api.upload_folder(
+              folder_path="dist",
+              repo_id=repo_id,
+              repo_type="space",
+              commit_message=f"Sync from GitHub @ {short_sha}",
+          )
+          print(f"Uploaded dist/ to https://huggingface.co/spaces/{repo_id}")
+          PY

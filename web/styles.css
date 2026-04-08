@@ -1,0 +1,303 @@
+:root {
+  --bg: #0a1018;
+  --panel: rgba(15, 24, 36, 0.82);
+  --panel-border: rgba(132, 171, 201, 0.22);
+  --text: #f0f3ee;
+  --muted: #98a3ad;
+  --accent: #ffcb77;
+  --accent-2: #61dafb;
+  --warn: #ff7d4d;
+  --shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
+  --radius: 14px;
+
+  --fam-GEO: #f4a23a;
+  --fam-MEO: #61dafb;
+  --fam-Molniya: #d65d6f;
+  --fam-HEO: #b34784;
+  --fam-LEO: #70e27a;
+  --fam-lunar: #ffe189;
+  --fam-other: #98a3ad;
+  --fam-unknown: #56606b;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; min-height: 100%; }
+
+body {
+  font-family: "Avenir Next", "Trebuchet MS", "Helvetica Neue", sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at 12% 18%, #1c2f44 0%, #101822 45%, #060a11 100%);
+}
+
+.bg-orbit {
+  position: fixed;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(0.4px);
+  animation: drift 30s ease-in-out infinite;
+}
+.bg-orbit-a { width: 70vw; height: 70vw; left: -22vw; top: -18vw; }
+.bg-orbit-b { width: 62vw; height: 44vw; right: -22vw; bottom: -16vw; animation-duration: 36s; }
+
+@keyframes drift {
+  0%   { transform: rotate(0deg) scale(1); opacity: 0.3; }
+  50%  { transform: rotate(4deg) scale(1.03); opacity: 0.55; }
+  100% { transform: rotate(0deg) scale(1); opacity: 0.3; }
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 26px 18px 60px;
+}
+
+.hero { margin-bottom: 16px; }
+
+.kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.hero h1 {
+  margin: 6px 0 4px;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: clamp(1.8rem, 4.5vw, 2.8rem);
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 86ch;
+  color: var(--muted);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-top: 14px;
+  padding: 14px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  background: linear-gradient(130deg, rgba(255, 203, 119, 0.16), rgba(97, 218, 251, 0.09));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.stat-label { color: var(--muted); font-size: 0.84rem; }
+.stat-value { font-size: 1.45rem; font-weight: 700; }
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.control-span-2 { grid-column: span 2; }
+
+.control label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.control input[type="text"],
+.control input[type="number"] {
+  width: 100%;
+  background: rgba(8, 14, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 9px 10px;
+  font: inherit;
+}
+
+.range-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.control.checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 100ms;
+}
+
+.chip .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+
+.chip[data-active="true"] {
+  background: rgba(255, 203, 119, 0.18);
+  border-color: rgba(255, 203, 119, 0.55);
+}
+
+.chip[data-active="false"] {
+  opacity: 0.45;
+}
+
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.chart-card {
+  background: rgba(7, 12, 19, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  padding: 10px 10px 6px;
+  margin-bottom: 12px;
+}
+
+.chart-card:last-child { margin-bottom: 0; }
+
+.chart-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.chart-card h3 { margin: 0; font-size: 1rem; }
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.badge {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(255, 203, 119, 0.12);
+  border: 1px solid rgba(255, 203, 119, 0.35);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.plotly-host {
+  width: 100%;
+  height: 460px;
+}
+
+.plotly-host-tall { height: 600px; }
+.plotly-host-short { height: 320px; }
+
+.table-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.muted { color: var(--muted); font-size: 0.85rem; }
+
+.table-scroll {
+  overflow: auto;
+  max-height: 640px;
+  margin-top: 6px;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: #131e2a;
+  z-index: 2;
+}
+
+.th-sort {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.th-sort .ind {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-left: 4px;
+}
+
+.th-sort:hover .ind { color: var(--accent); }
+
+th, td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 7px 6px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
+tbody tr.row-highlight { background: rgba(255, 203, 119, 0.18) !important; }
+
+td .fam-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+@media (max-width: 1100px) {
+  .charts-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .control-span-2 { grid-column: auto; }
+  th, td { font-size: 0.78rem; }
+}

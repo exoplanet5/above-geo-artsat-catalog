@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Above-GEO Artsat Catalog | xGEO &middot; cislunar &middot; translunar</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  </head>
+  <body>
+    <div class="bg-orbit bg-orbit-a"></div>
+    <div class="bg-orbit bg-orbit-b"></div>
+
+    <main class="page">
+      <header class="hero">
+        <p class="kicker">Bill Gray TLE List &middot; above-GEO regime only</p>
+        <h1>Above-GEO Artsat Orbit Catalog</h1>
+        <p class="subtitle">
+          xGEO, cislunar, and translunar artificial satellites parsed from
+          <code>tle_list.txt</code>. Only objects with apogee above
+          geostationary altitude (36 000 km) are included; LEO/MEO and
+          archived <code>old_tles/</code> entries are excluded. Three
+          cross-linked Plotly views compare RAAN, inclination, period,
+          perigee, and apogee across the population.
+        </p>
+      </header>
+
+      <section class="stats" id="stats"></section>
+
+      <section class="panel controls">
+        <div class="control control-span-2">
+          <label for="searchInput">Search</label>
+          <input id="searchInput" type="text"
+                 placeholder="Name, NORAD, COSPAR, or include file" />
+        </div>
+
+        <div class="control range-block">
+          <label>RAAN &Omega; (deg)</label>
+          <div class="range-pair">
+            <input class="range-input" id="raanMin" type="number" step="0.1" placeholder="min" />
+            <input class="range-input" id="raanMax" type="number" step="0.1" placeholder="max" />
+          </div>
+        </div>
+
+        <div class="control range-block">
+          <label>Inclination i (deg)</label>
+          <div class="range-pair">
+            <input class="range-input" id="incMin" type="number" step="0.1" placeholder="min" />
+            <input class="range-input" id="incMax" type="number" step="0.1" placeholder="max" />
+          </div>
+        </div>
+
+        <div class="control range-block">
+          <label>Period (day)</label>
+          <div class="range-pair">
+            <input class="range-input" id="periodMin" type="number" step="0.01" placeholder="min" />
+            <input class="range-input" id="periodMax" type="number" step="0.01" placeholder="max" />
+          </div>
+        </div>
+
+        <div class="control range-block">
+          <label>Perigee (km)</label>
+          <div class="range-pair">
+            <input class="range-input" id="perigeeMin" type="number" step="10" placeholder="min" />
+            <input class="range-input" id="perigeeMax" type="number" step="10" placeholder="max" />
+          </div>
+        </div>
+
+        <div class="control range-block">
+          <label>Apogee (km)</label>
+          <div class="range-pair">
+            <input class="range-input" id="apogeeMin" type="number" step="10" placeholder="min" />
+            <input class="range-input" id="apogeeMax" type="number" step="10" placeholder="max" />
+          </div>
+        </div>
+
+        <div class="control checkbox">
+          <label>
+            <input id="includeExtended" type="checkbox" checked />
+            Include extended-format TLEs
+          </label>
+        </div>
+
+        <div class="control control-span-2" id="zoneChips">
+          <label>Apogee zone</label>
+          <div class="chips" id="zoneChipList"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="charts-row">
+          <div class="chart-card">
+            <header>
+              <h3>Perigee vs Apogee</h3>
+              <span class="badge" id="periApoCount"></span>
+            </header>
+            <div id="plotPeriApo" class="plotly-host"></div>
+          </div>
+          <div class="chart-card">
+            <header>
+              <h3>RAAN &Omega; vs Inclination i</h3>
+              <span class="badge" id="raanIncCount"></span>
+            </header>
+            <div id="plotRaanInc" class="plotly-host"></div>
+          </div>
+        </div>
+
+        <div class="chart-card chart-3d">
+          <header>
+            <h3>3D Orbit Explorer &mdash; Perigee &times; Apogee &times; Inclination</h3>
+            <span class="hint">Drag to rotate &middot; scroll to zoom &middot; double-click to reset &middot; hover for details</span>
+          </header>
+          <div id="plot3d" class="plotly-host plotly-host-tall"></div>
+        </div>
+
+        <div class="chart-card">
+          <header>
+            <h3>Period Distribution by Apogee Zone</h3>
+          </header>
+          <div id="plotHist" class="plotly-host plotly-host-short"></div>
+        </div>
+      </section>
+
+      <section class="panel table-wrap">
+        <div class="table-header">
+          <h2>Catalog Entries</h2>
+          <span class="muted" id="tableCount"></span>
+        </div>
+        <div class="table-scroll">
+          <table id="satTable">
+            <thead>
+              <tr>
+                <th><button class="th-sort" data-key="name">Name <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="norad_id">NORAD <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="cospar_id">COSPAR <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="zone">Zone <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="include_file">File <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="tle_epoch_utc">Epoch (UTC) <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="raan_deg">RAAN &Omega; (deg) <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="inclination_deg">Inc (deg) <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="period_day">Period (day) <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="perigee_km">Perigee (km) <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="apogee_km">Apogee (km) <span class="ind">&#8597;</span></button></th>
+                <th><button class="th-sort" data-key="is_extended_format">Format <span class="ind">&#8597;</span></button></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
