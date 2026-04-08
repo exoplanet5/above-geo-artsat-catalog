@@ -4,6 +4,7 @@ emoji: 🛰️
 colorFrom: indigo
 colorTo: yellow
 sdk: static
+app_file: index.html
 pinned: false
 short_description: xGEO, cislunar, translunar artsats from Bill Gray's TLE list
 ---
