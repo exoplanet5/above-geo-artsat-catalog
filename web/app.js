@@ -232,11 +232,11 @@ function renderTable() {
   });
 }
 
-function highlightTableRow(id) {
+function highlightTableRow(id, scroll = false) {
   document.querySelectorAll("#satTable tbody tr").forEach((tr) => {
     if (Number(tr.dataset.id) === id) {
       tr.classList.add("row-highlight");
-      tr.scrollIntoView({ block: "nearest" });
+      if (scroll) tr.scrollIntoView({ block: "nearest" });
     } else {
       tr.classList.remove("row-highlight");
     }
@@ -569,17 +569,19 @@ function bindHoverHandlers() {
       if (!pt) return;
       const satId = Array.isArray(pt.customdata) ? pt.customdata[0] : pt.customdata;
       if (typeof satId !== "number") return;
-      setHighlight(satId, id);
+      // Hover just paints the overlay + row class; no scroll-to-row.
+      setHighlight(satId, id, false);
     });
     el.on("plotly_unhover", () => {
       if (state.suspendHover) return;
-      setHighlight(null, id);
+      setHighlight(null, id, false);
     });
     el.on("plotly_click", (ev) => {
       const pt = ev.points && ev.points[0];
       if (!pt) return;
       const satId = Array.isArray(pt.customdata) ? pt.customdata[0] : pt.customdata;
-      if (typeof satId === "number") setHighlight(satId, id);
+      // Click is the only gesture that scrolls the table to the row.
+      if (typeof satId === "number") setHighlight(satId, id, true);
     });
   }
 }
@@ -590,8 +592,10 @@ function findSatById(id) {
   return state.filtered.find((s) => s.id === id) || null;
 }
 
-function setHighlight(id, sourcePlotId) {
-  if (state.highlightId === id) return;
+function setHighlight(id, sourcePlotId, scroll = false) {
+  // Short-circuit only when nothing would change: same id AND no new scroll
+  // request. A click on an already-hovered point still needs to scroll.
+  if (state.highlightId === id && !scroll) return;
   state.highlightId = id;
   state.suspendHover = true;
 
@@ -623,7 +627,7 @@ function setHighlight(id, sourcePlotId) {
     }, [lastIdx]);
   }
 
-  highlightTableRow(id);
+  highlightTableRow(id, scroll);
 
   // Clear suspend on next tick so user-initiated hovers resume
   setTimeout(() => { state.suspendHover = false; }, 30);
