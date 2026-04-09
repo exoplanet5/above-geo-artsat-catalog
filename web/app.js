@@ -105,7 +105,6 @@ function inRange(v, lo, hi) {
 function applyFilters() {
   if (!state.dataset) return;
   const search = document.getElementById("searchInput").value.trim().toLowerCase();
-  const incExt = document.getElementById("includeExtended").checked;
 
   const f = {
     raan: [readNumber("raanMin"), readNumber("raanMax")],
@@ -116,7 +115,6 @@ function applyFilters() {
   };
 
   state.filtered = state.dataset.satellites.filter((s) => {
-    if (!incExt && s.is_extended_format) return false;
     if (!state.enabledZones.has(s.zone)) return false;
     if (search) {
       const hay = [s.name, s.norad_id, s.cospar_id, s.include_file, s.zone]
@@ -661,7 +659,6 @@ function renderZoneChips() {
 
 function setupFilterInputs() {
   document.getElementById("searchInput").addEventListener("input", applyFilters);
-  document.getElementById("includeExtended").addEventListener("change", applyFilters);
   document.querySelectorAll(".range-input").forEach((el) => {
     el.addEventListener("input", applyFilters);
   });

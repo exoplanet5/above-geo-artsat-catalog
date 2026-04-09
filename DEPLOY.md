@@ -143,8 +143,15 @@ You can watch the run live in the Actions tab. When it finishes, the
 Space rebuilds itself and your catalog is live at:
 
 ```
-https://YOUR_HF_USER-above-geo-artsat-catalog.hf.space
+https://YOUR_HF_USER-above-geo-artsat-catalog.static.hf.space
 ```
+
+> **Note the `.static.hf.space` subdomain.** Static Spaces are served from
+> `<user>-<space>.static.hf.space`, **not** the plain `<user>-<space>.hf.space`
+> domain (which only serves Gradio / Streamlit / Docker Spaces). Hitting the
+> wrong host will give a permanent 404 even when your repo is perfectly
+> uploaded. The canonical link is also shown on the Space page itself —
+> click the "Embed this Space" / "Direct URL" link there to copy it.
 
 ---
 
@@ -202,6 +209,19 @@ short_description: xGEO, cislunar, translunar artsats from Bill Gray's TLE list
 ```
 
 Do not remove these lines — the Space refuses to render without them.
+
+**Strict rules for the frontmatter:**
+
+- It must be the **very first thing** in the file. No blank lines, no
+  comments, no prose, no Markdown heading above the opening `---`.
+- It must be raw YAML at the top level — **never** wrapped inside a
+  fenced code block (no `` ``` `` around it).
+- The closing `---` must also be on its own line, before any prose
+  content begins.
+
+If any of these are wrong, HF silently treats the README as missing
+metadata and the Space falls back to a 404 / empty page even though the
+files uploaded fine.
 
 ---
 
@@ -272,5 +292,7 @@ password (or run `huggingface-cli login` once).
 | Action fails on `make dist` with "data/orbits.json missing"              | Same as above — commit it.                                                                       |
 | HF Space loads but plots are empty                                       | Open browser devtools → Network tab. The fetch falls through to `./data/orbits.json`. If that 404s, the upload was incomplete; rerun the action. |
 | HF Space refuses to start                                                | Malformed YAML frontmatter in `deploy/README.md`. Check the `---` fences and field names.       |
+| `<user>-<space>.hf.space` returns 404 even though the repo files look correct | Wrong subdomain. Static Spaces are served from `<user>-<space>.static.hf.space`. Use that host instead. |
+| HF Space loads as a blank / 404 page despite a green Action run          | README frontmatter is wrapped in a code fence or has text above the opening `---`. Move the YAML block to the very top of the file, unfenced. |
 | Action keeps re-running on unrelated pushes                              | Tighten the `paths:` filter in `sync-hf.yml`.                                                    |
 | Want to sync without pushing code                                        | Actions tab → Sync to Hugging Face Space → Run workflow.                                        |

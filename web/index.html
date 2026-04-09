@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Above-GEO Artsat Catalog | xGEO &middot; cislunar &middot; translunar</title>
+    <title>High Orbit Artsat Catalog | xGEO &middot; cislunar &middot; translunar</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
   </head>
@@ -13,15 +13,15 @@
 
     <main class="page">
       <header class="hero">
-        <p class="kicker">Bill Gray TLE List &middot; above-GEO regime only</p>
-        <h1>Above-GEO Artsat Orbit Catalog</h1>
+        <h1>High Orbit Artsat Catalog</h1>
         <p class="subtitle">
-          xGEO, cislunar, and translunar artificial satellites parsed from
-          <code>tle_list.txt</code>. Only objects with apogee above
-          geostationary altitude (36 000 km) are included; LEO/MEO and
-          archived <code>old_tles/</code> entries are excluded. Three
-          cross-linked Plotly views compare RAAN, inclination, period,
-          perigee, and apogee across the population.
+          Apogee-based orbit regimes above geostationary altitude:
+          <span class="regime-tag" style="--c:#f4a23a"><strong>xGEO</strong> 36 000 &ndash; 100 000 km</span>,
+          <span class="regime-tag" style="--c:#61dafb"><strong>cislunar</strong> 100 000 &ndash; 400 000 km</span>,
+          <span class="regime-tag" style="--c:#ffe189"><strong>translunar</strong> &ge; 400 000 km</span>,
+          and <span class="regime-tag" style="--c:#b34784"><strong>deep-space</strong></span>
+          (objects whose orbits require Bill Gray&rsquo;s extended-format TLEs because
+          standard 80-column TLEs cannot represent their elements).
         </p>
       </header>
 
@@ -74,13 +74,6 @@
           </div>
         </div>
 
-        <div class="control checkbox">
-          <label>
-            <input id="includeExtended" type="checkbox" checked />
-            Include extended-format TLEs
-          </label>
-        </div>
-
         <div class="control control-span-2" id="zoneChips">
           <label>Apogee zone</label>
           <div class="chips" id="zoneChipList"></div>
@@ -126,6 +119,15 @@
           <h2>Catalog Entries</h2>
           <span class="muted" id="tableCount"></span>
         </div>
+        <p class="muted table-note">
+          <strong>Format</strong> column &mdash;
+          <em>Classical</em>: elements (inclination, RAAN, eccentricity, mean motion,
+          perigee, apogee) parsed from a standard 80-column TLE.
+          <em>Extended</em>: Bill Gray&rsquo;s extended-format TLE used when the object
+          is too deep-space for the standard column widths; elements are not
+          parseable from the line, so these rows are labelled as the
+          <code>deep-space</code> zone and are excluded from the element-based plots.
+        </p>
         <div class="table-scroll">
           <table id="satTable">
             <thead>
@@ -148,6 +150,18 @@
           </table>
         </div>
       </section>
+
+      <footer class="page-footer">
+        <p>
+          Source: Bill Gray&rsquo;s high-altitude artificial-satellite TLE list,
+          part of Project Pluto &mdash;
+          <a href="https://www.projectpluto.com/tle_info.htm" target="_blank" rel="noopener noreferrer">
+            projectpluto.com/tle_info.htm
+          </a>.
+          The <code>tle_list.txt</code> manifest and the referenced
+          <code>.tle</code> files drive every row in this catalog.
+        </p>
+      </footer>
     </main>
 
     <script src="./app.js"></script>

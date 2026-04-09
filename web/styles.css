@@ -74,9 +74,24 @@ body {
 
 .subtitle {
   margin: 0;
-  max-width: 86ch;
+  max-width: 92ch;
   color: var(--muted);
+  line-height: 1.55;
 }
+
+.regime-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  margin: 2px 2px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  color: var(--text);
+  white-space: nowrap;
+  font-size: 0.86rem;
+}
+
+.regime-tag strong { color: var(--c); }
 
 .panel {
   background: var(--panel);
@@ -233,6 +248,49 @@ body {
 }
 
 .muted { color: var(--muted); font-size: 0.85rem; }
+
+.table-note {
+  margin: 8px 2px 0;
+  line-height: 1.5;
+  max-width: 110ch;
+}
+
+.table-note em {
+  font-style: normal;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.table-note code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
+
+.page-footer {
+  margin-top: 22px;
+  padding: 14px 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.page-footer p { margin: 0; line-height: 1.55; }
+
+.page-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(255, 203, 119, 0.5);
+}
+
+.page-footer a:hover { border-bottom-color: var(--accent); }
+
+.page-footer code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 4px;
+  border-radius: 4px;
+}
 
 .table-scroll {
   overflow: auto;
