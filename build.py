@@ -254,6 +254,172 @@ def parse_comment_elements(path: Path) -> dict | None:
     }
 
 
+# ---------- Extended-format state-vector extraction via get_vect -----------
+# Bill Gray's `get_vect` decodes a hex-format TLE into a J2000 equatorial
+# geocentric state vector (position in km, velocity in km/s) at a given
+# instant.  We convert that state vector to classical (osculating)
+# Keplerian elements.  This is the fallback for extended-format TLE
+# files that lack the comment-header element block.
+
+import subprocess
+import shutil
+
+GET_VECT_BIN = Path("/Users/mickey/Desktop/billgray/sat_code/get_vect")
+# Rough TAI-UTC + 32.184s leap offset for 2020-2030.  Good enough to pick
+# a point inside the TLE's validity window; we only want stable elements,
+# not a precise ephemeris position.
+DELTA_T_SEC = 69.2
+J2000_JD = 2451545.0  # 2000-01-01 12:00 UTC
+
+
+def _jd_tdt_from_utc(dt: datetime) -> float:
+    """Convert a UTC datetime to approximate JD TDT."""
+    utc = dt.astimezone(UTC)
+    days_since_j2000 = (utc - datetime(2000, 1, 1, 12, 0, tzinfo=UTC)).total_seconds() / 86400.0
+    return J2000_JD + days_since_j2000 + DELTA_T_SEC / 86400.0
+
+
+def _parse_get_vect_output(text: str) -> tuple[list[float], list[float]] | None:
+    """Parse `get_vect` stdout. Returns (r_km[3], v_km_s[3]) for the first
+    state vector emitted, or None if no vector is present."""
+    # Data lines look like:
+    #  -467538.13198 -177348.94474 110920.45433 0408   # Ctr 3 km sec eq
+    #   0.02816 -0.56614 -0.43637 0 0 0
+    # We want two consecutive lines: first has ~3 large floats (position
+    # km), second has ~3 small floats (velocity km/s).
+    lines = [ln.rstrip() for ln in text.splitlines()]
+    for i in range(len(lines) - 1):
+        parts1 = lines[i].split()
+        parts2 = lines[i + 1].split()
+        if len(parts1) < 3 or len(parts2) < 3:
+            continue
+        try:
+            rx, ry, rz = float(parts1[0]), float(parts1[1]), float(parts1[2])
+            vx, vy, vz = float(parts2[0]), float(parts2[1]), float(parts2[2])
+        except ValueError:
+            continue
+        # Position magnitude > 6000 km (above Earth's surface) and velocity
+        # magnitude < 50 km/s (escape speed at Earth's surface ~ 11.2 km/s,
+        # plenty of headroom for escape trajectories).
+        r_mag = math.sqrt(rx * rx + ry * ry + rz * rz)
+        v_mag = math.sqrt(vx * vx + vy * vy + vz * vz)
+        if r_mag < 6000 or v_mag > 50:
+            continue
+        return ([rx, ry, rz], [vx, vy, vz])
+    return None
+
+
+def get_state_vector(tle_path: Path, norad_id: int, jd_tdt: float) -> tuple[list[float], list[float]] | None:
+    """Run `get_vect` against a TLE file at a given JD TDT. Returns
+    (r_km[3], v_km_s[3]) in J2000 geocentric, or None on failure."""
+    if not GET_VECT_BIN.exists() or shutil.which(str(GET_VECT_BIN)) is None:
+        return None
+    try:
+        proc = subprocess.run(
+            [str(GET_VECT_BIN), str(tle_path), "-n", str(norad_id), "-t", f"{jd_tdt:.6f}"],
+            capture_output=True, text=True, timeout=8, cwd="/tmp",
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    return _parse_get_vect_output(proc.stdout)
+
+
+def osculating_elements(r_vec: list[float], v_vec: list[float]) -> dict | None:
+    """Convert a geocentric state vector (J2000, km, km/s) to classical
+    Keplerian elements. Returns None if the geometry is degenerate."""
+    rx, ry, rz = r_vec
+    vx, vy, vz = v_vec
+    r = math.sqrt(rx * rx + ry * ry + rz * rz)
+    v2 = vx * vx + vy * vy + vz * vz
+    if r < 1e-6:
+        return None
+
+    # Specific orbital energy. energy < 0 => bound ellipse.
+    energy = 0.5 * v2 - EARTH_MU / r
+    if abs(energy) < 1e-12:
+        return None  # parabolic, skip
+    a_km = -EARTH_MU / (2.0 * energy)
+
+    # Specific angular momentum h = r x v.
+    hx = ry * vz - rz * vy
+    hy = rz * vx - rx * vz
+    hz = rx * vy - ry * vx
+    h_mag = math.sqrt(hx * hx + hy * hy + hz * hz)
+    if h_mag < 1e-6:
+        return None  # radial trajectory, undefined plane
+
+    # Eccentricity vector e_vec = (v x h)/mu - r_hat.
+    evx = (vy * hz - vz * hy) / EARTH_MU - rx / r
+    evy = (vz * hx - vx * hz) / EARTH_MU - ry / r
+    evz = (vx * hy - vy * hx) / EARTH_MU - rz / r
+    ecc = math.sqrt(evx * evx + evy * evy + evz * evz)
+
+    # Inclination.
+    cos_inc = max(-1.0, min(1.0, hz / h_mag))
+    inc_deg = math.degrees(math.acos(cos_inc))
+
+    # RAAN (node vector = z_hat x h, so nx = -hy, ny = hx, nz = 0).
+    nx, ny = -hy, hx
+    n_mag = math.sqrt(nx * nx + ny * ny)
+    if n_mag < 1e-9:
+        raan_deg = 0.0
+    else:
+        cos_raan = max(-1.0, min(1.0, nx / n_mag))
+        raan_deg = math.degrees(math.acos(cos_raan))
+        if ny < 0:
+            raan_deg = 360.0 - raan_deg
+
+    result: dict = {
+        "inclination_deg": inc_deg,
+        "raan_deg": raan_deg,
+        "eccentricity": ecc,
+        "semi_major_axis_km": a_km if energy < 0 else None,
+        "perigee_km": None,
+        "apogee_km": None,
+        "period_day": None,
+        "mean_motion_rev_day": None,
+        "bound": energy < 0 and ecc < 1.0,
+    }
+
+    if result["bound"]:
+        # Bound ellipse: period from Kepler's third law, perigee/apogee as
+        # altitudes above Earth's mean radius.
+        period_s = 2.0 * math.pi * math.sqrt((a_km ** 3) / EARTH_MU)
+        result["period_day"] = period_s / 86400.0
+        result["mean_motion_rev_day"] = 86400.0 / period_s
+        result["perigee_km"] = a_km * (1.0 - ecc) - EARTH_RADIUS
+        result["apogee_km"] = a_km * (1.0 + ecc) - EARTH_RADIUS
+    return result
+
+
+def extract_state_vector_elements(tle_path: Path, norad_id: int | None,
+                                   epoch_utc: datetime | None) -> dict | None:
+    """Run get_vect on `tle_path` at `epoch_utc` (UTC), convert the state
+    vector to osculating Keplerian elements. Returns a dict in the same
+    shape as parse_comment_elements, or None on failure."""
+    if norad_id is None or epoch_utc is None:
+        return None
+    jd_tdt = _jd_tdt_from_utc(epoch_utc)
+    sv = get_state_vector(tle_path, norad_id, jd_tdt)
+    if sv is None:
+        return None
+    r_vec, v_vec = sv
+    elems = osculating_elements(r_vec, v_vec)
+    if elems is None:
+        return None
+    return {
+        "inclination_deg": elems["inclination_deg"],
+        "raan_deg": elems["raan_deg"],
+        "eccentricity": elems["eccentricity"],
+        "mean_motion_rev_day": elems["mean_motion_rev_day"],
+        "period_day": elems["period_day"],
+        "semi_major_axis_km": elems["semi_major_axis_km"],
+        "perigee_km": elems["perigee_km"],
+        "apogee_km": elems["apogee_km"],
+        "heliocentric": not elems["bound"],
+    }
+
+
 # ---------- tle_list.txt parsing -------------------------------------------
 
 @dataclass
@@ -376,13 +542,17 @@ def build_dataset(tle_root: Path, tle_list: Path) -> dict:
             skipped_no_data += 1
             continue
 
-        # For extended-format records, try to backfill orbital elements
-        # from the comment header that Bill Gray writes at the top of the
-        # file (a, e, Incl, Node, P).
+        # For extended-format records, try to backfill orbital elements.
+        # Two stages in order of preference:
+        #   1. Comment-header block (mean elements from find_orb's fit).
+        #   2. Fall back to get_vect + osculating elements from the hex
+        #      state vector at the picked TLE epoch.
         if best.is_extended_format:
             if e.include_file not in _comment_cache:
                 _comment_cache[e.include_file] = parse_comment_elements(tle_path)
             ce = _comment_cache[e.include_file]
+            if ce is None:
+                ce = extract_state_vector_elements(tle_path, e.norad_id, best.epoch_utc)
             if ce is not None:
                 best.inclination_deg = ce["inclination_deg"]
                 best.raan_deg = ce["raan_deg"]
